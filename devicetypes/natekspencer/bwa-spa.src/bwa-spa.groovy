@@ -1,4 +1,4 @@
-/**
+/*
  *  BWA Spa
  *
  *  Copyright 2020 Nathan Spencer
@@ -15,6 +15,8 @@
  *  CHANGE HISTORY
  *  VERSION     DATE            NOTES
  *  0.9.0       2020-01-30      Initial release with basic access and control of spas
+ *  1.0.0       2020-01-31      Updated UI and icons as well as switch functionality that can be controlled with
+ *                              Alexa. Added preference for a "Default Temperature When Turned On"
  *
  */
 
@@ -40,12 +42,14 @@ import groovy.time.TimeCategory
 
 metadata {
     definition (name: "BWA Spa", namespace: "natekspencer", author: "Nathan Spencer") {
+        capability "Actuator"
         capability "Temperature Measurement"
         capability "Thermostat Heating Setpoint"
         capability "Thermostat Mode"
         capability "Thermostat Operating State"
         capability "Refresh"
         capability "Sensor"
+        capability "Switch"
         
         attribute "temperatureScale", "string"
         attribute "pump1", "string"
@@ -59,6 +63,7 @@ metadata {
         attribute "light1", "string"
         attribute "light2", "string"
         
+        command "toggleSwitch"
         command "togglePump1"
         command "togglePump2"
         command "togglePump3"
@@ -72,12 +77,13 @@ metadata {
     }
     
     preferences {
+        input "defaultOnTemperature", "number", title: "Default Temperature When Turned On", range: getTemperatureRange()
     }
 
     tiles(scale: 2) {
-        multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4) {
+        multiAttributeTile(name: "temperature", type: "generic", width: 6, height: 4, canChangeIcon: true) {
             tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-                attributeState "temperature", label: '${currentValue}', defaultState: true, backgroundColors:[
+                attributeState "temperature", label: '${currentValue}°', unit:"dF", action: "toggleSwitch", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/hot-tub.png", canChangeIcon: true, defaultState: true, backgroundColors: [
                 	[value: 80, color: "#153591"],
             		[value: 84, color: "#1e9cbb"],
             		[value: 88, color: "#90d2a7"],
@@ -87,103 +93,107 @@ metadata {
             		[value: 104, color: "#bc2323"]
         		]
             }
+            tileAttribute("device.spaStatus", key: "SECONDARY_CONTROL") {
+                attributeState("spaStatus", label:'${currentValue}', defaultState: true)
+            }
         }
         
-        controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 2, inactiveLabel: false, range:"(80..104)") {
-			state "setHeatingSetpoint", action:"setHeatingSetpoint", backgroundColor:"#e86d13",
-            	backgroundColors:[
-                	[value: 80, color: "#153591"],
-            		[value: 84, color: "#1e9cbb"],
-            		[value: 88, color: "#90d2a7"],
-            		[value: 92, color: "#44b621"],
-            		[value: 96, color: "#f1d801"],
-            		[value: 100, color: "#d04e00"],
-            		[value: 104, color: "#bc2323"]
-        		]
+        controlTile("heatSliderControl", "device.heatingSetpoint", "slider", width: 2, height: 1, inactiveLabel: false, range: getTemperatureRange()) {
+			state "heatingSetpoint", action:"setHeatingSetpoint", backgroundColor: "#d04e00"
 		}
-        
-        standardTile("pump1Label", "", width: 1, height: 1, decoration: "flat") {
-            state "default", label: "pump 1", action: "togglePump1", icon: "https://cdn.onlinewebfonts.com/svg/img_97990.png", defaultState: true
+
+        standardTile("pump1", "device.pump1", width: 2, height: 1, decoration: "flat") {
+            state "off"            , label: 'pump 1: ${currentValue}', action: "togglePump1", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low" , label: 'pump 1: ${currentValue}', action: "togglePump1", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"            , label: 'pump 1: ${currentValue}', action: "togglePump1", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to high", label: 'pump 1: ${currentValue}', action: "togglePump1", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "high"           , label: 'pump 1: ${currentValue}', action: "togglePump1", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"    , label: 'pump 1: ${currentValue}', action: "togglePump1", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
         }
 
-        standardTile("pump1", "device.pump1", width: 1, height: 1, decoration: "flat") {
-            state "default", label: '${currentValue}', action: "togglePump1", defaultState: true
-        }
-        
-        standardTile("pump2Label", "", width: 1, height: 1, decoration: "flat") {
-            state "default", label: "pump 2", action: "togglePump2", icon: "https://cdn.onlinewebfonts.com/svg/img_97990.png", defaultState: true
-        }
-
-        standardTile("pump2", "device.pump2", width: 1, height: 1, decoration: "flat") {
-            state "default", label: '${currentValue}', action: "togglePump2", defaultState: true
-        }
-        
-        standardTile("pump3Label", "", width: 1, height: 1, decoration: "flat") {
-            state "default", label: "pump 3", action: "togglePump3", icon: "https://cdn.onlinewebfonts.com/svg/img_97990.png", defaultState: true
+        standardTile("pump2", "device.pump2", width: 2, height: 1, decoration: "flat") {
+            state "off"            , label: 'pump 2: ${currentValue}', action: "togglePump2", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low" , label: 'pump 2: ${currentValue}', action: "togglePump2", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"            , label: 'pump 2: ${currentValue}', action: "togglePump2", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to high", label: 'pump 2: ${currentValue}', action: "togglePump2", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "high"           , label: 'pump 2: ${currentValue}', action: "togglePump2", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"    , label: 'pump 2: ${currentValue}', action: "togglePump2", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
         }
 
-        standardTile("pump3", "device.pump3", width: 1, height: 1, decoration: "flat") {
-            state "default", label: '${currentValue}', action: "togglePump3", defaultState: true
-        }
-        
-        standardTile("pump4Label", "", width: 1, height: 1, decoration: "flat") {
-            state "default", label: "pump 4", action: "togglePump4", icon: "https://cdn.onlinewebfonts.com/svg/img_97990.png", defaultState: true
-        }
-
-        standardTile("pump4", "device.pump4", width: 1, height: 1, decoration: "flat") {
-            state "default", label: '${currentValue}', action: "togglePump4", defaultState: true
-        }
-        
-        standardTile("pump5Label", "", width: 1, height: 1, decoration: "flat") {
-            state "default", label: "pump 5", action: "togglePump5", icon: "https://cdn.onlinewebfonts.com/svg/img_97990.png", defaultState: true
+        standardTile("pump3", "device.pump3", width: 2, height: 1, decoration: "flat") {
+            state "off"            , label: 'pump 3: ${currentValue}', action: "togglePump3", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low" , label: 'pump 3: ${currentValue}', action: "togglePump3", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"            , label: 'pump 3: ${currentValue}', action: "togglePump3", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to high", label: 'pump 3: ${currentValue}', action: "togglePump3", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "high"           , label: 'pump 3: ${currentValue}', action: "togglePump3", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"    , label: 'pump 3: ${currentValue}', action: "togglePump3", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
         }
 
-        standardTile("pump5", "device.pump5", width: 1, height: 1, decoration: "flat") {
-            state "default", label: '${currentValue}', action: "togglePump5", defaultState: true
-        }
-        
-        standardTile("pump6Label", "", width: 1, height: 1, decoration: "flat") {
-            state "default", label: "pump 6", action: "togglePump6", icon: "https://cdn.onlinewebfonts.com/svg/img_97990.png", defaultState: true
+        standardTile("pump4", "device.pump4", width: 2, height: 1, decoration: "flat") {
+            state "off"            , label: 'pump 4: ${currentValue}', action: "togglePump4", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low" , label: 'pump 4: ${currentValue}', action: "togglePump4", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"            , label: 'pump 4: ${currentValue}', action: "togglePump4", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to high", label: 'pump 4: ${currentValue}', action: "togglePump4", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "high"           , label: 'pump 4: ${currentValue}', action: "togglePump4", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"    , label: 'pump 4: ${currentValue}', action: "togglePump4", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
         }
 
-        standardTile("pump6", "device.pump6", width: 1, height: 1, decoration: "flat") {
-            state "default", label: '${currentValue}', action: "togglePump6", defaultState: true
+        standardTile("pump5", "device.pump5", width: 2, height: 1, decoration: "flat") {
+            state "off"            , label: 'pump 5: ${currentValue}', action: "togglePump5", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low" , label: 'pump 5: ${currentValue}', action: "togglePump5", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"            , label: 'pump 5: ${currentValue}', action: "togglePump5", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to high", label: 'pump 5: ${currentValue}', action: "togglePump5", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "high"           , label: 'pump 5: ${currentValue}', action: "togglePump5", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"    , label: 'pump 5: ${currentValue}', action: "togglePump5", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+        }
+
+        standardTile("pump6", "device.pump6", width: 2, height: 1, decoration: "flat") {
+            state "off"            , label: 'pump 6: ${currentValue}', action: "togglePump6", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low" , label: 'pump 6: ${currentValue}', action: "togglePump6", nextState: "setting to low" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"            , label: 'pump 6: ${currentValue}', action: "togglePump6", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to high", label: 'pump 6: ${currentValue}', action: "togglePump6", nextState: "setting to high", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "high"           , label: 'pump 6: ${currentValue}', action: "togglePump6", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"    , label: 'pump 6: ${currentValue}', action: "togglePump6", nextState: "turning off"    , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+        }
+
+        standardTile("blower", "device.blower", width: 2, height: 1, decoration: "flat") {
+            state "off"              , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "setting to low"   , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png" , defaultState: true
+            state "setting to low"   , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "setting to low"   , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-off.png"
+            state "low"              , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "setting to medium", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "setting to medium", label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "setting to medium", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-low.png"
+            state "medium"           , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "setting to high"  , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-med.png"
+            state "setting to high"  , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "setting to high"  , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-med.png"
+            state "high"             , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "turning off"      , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
+            state "turning off"      , label: 'blower: ${currentValue}', action: "toggleBlower", nextState: "turning off"      , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/fan-high.png"
         }
         
-        standardTile("blower", "device.blower", width: 1, height: 1, decoration: "flat") {
-            state "default", label: 'blower: ${currentValue}', action: "toggleBlower", icon: "https://cdn4.iconfinder.com/data/icons/air-conditioning/100/8-512.png" , defaultState: true
+        standardTile("mister", "device.mister", width: 2, height: 1, decoration: "flat") {
+            state "off"        , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning on" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-off.png" , defaultState: true
+            state "turning on" , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning on" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-off.png"
+            state "on"         , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning off", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-on.png"
+            state "turning off", label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning off", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-on.png"
         }
         
-        standardTile("mister", "device.mister", width: 1, height: 1, decoration: "flat") {
-            state "default", label: 'mister: ${currentValue}', action: "toggleMister", icon: "https://img1.wsimg.com/isteam/ip/b4bf0ae6-3717-494e-8b51-ef0995185cdd/3ff6b749-879a-40f9-aa40-4435fbec29c5.png" , defaultState: true
-        }
-        
-        standardTile("light1", "device.light1", width: 1, height: 1, decoration: "flat") {
-            state "default", label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.on" , backgroundColor: "#00a0dc", defaultState: true
+        standardTile("light1", "device.light1", width: 2, height: 1, decoration: "flat") {
+            state "default", label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.on" , defaultState: true
             state "off"    , label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.off"
         }
         
-        standardTile("light2", "device.light2", width: 1, height: 1, decoration: "flat") {
-            state "default", label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.on" , backgroundColor: "#00a0dc", defaultState: true
+        standardTile("light2", "device.light2", width: 2, height: 1, decoration: "flat") {
+            state "default", label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.on" , defaultState: true
             state "off"    , label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.off"
         }
 
-        standardTile("refresh", "device.refresh", width: 1, height: 1, decoration: "flat") {
-            state "refresh", label: 'refresh', action: "refresh", icon: "st.secondary.refresh"
+        standardTile("refresh", "device.refresh", width: 2, height: 1, decoration: "flat") {
+            state "refresh", label: 'refresh', action: "refresh", icon: "st.secondary.refresh", defaultState: true
         }
 
         main("temperature")
         details(["temperature"
-            , "pump1Label", "pump1"
-            , "heatSliderControl"
-            , "pump2Label", "pump2"
-            , "pump3Label", "pump3"
-            , "blower", "mister"
-            , "pump4Label", "pump4"
-            , "pump5Label", "pump5"
-            , "light1", "light2"
-            , "pump6Label", "pump6"
-            , "refresh"])
+            , "pump1", "heatSliderControl", "pump2"
+            , "pump3", "blower", "pump4"
+            , "pump5", "mister", "pump6"
+            , "light1", "refresh", "light2"])
     }
 }
 
@@ -191,6 +201,63 @@ def installed() {
 }
 
 def updated() {
+}
+
+def toggleSwitch() {
+    if (device.currentValue("switch") == "on") {
+        off()
+    } else {
+        on()
+    }
+}
+
+def on() {
+    if (defaultOnTemperature) {
+        sendEvent(name: "previousHeatingSetpoint", value: device.currentValue("heatingSetpoint"), displayed: false)
+        setHeatingSetpoint(defaultOnTemperature)
+    }
+    if (device.currentValue("pump1") == "off"
+     && device.currentValue("pump2") == "off"
+     && device.currentValue("pump3") == "off"
+     && device.currentValue("pump4") == "off"
+     && device.currentValue("pump5") == "off"
+     && device.currentValue("pump6") == "off") {
+        togglePump1()
+    }
+}
+
+def off() {
+    def checkAgain = false
+    if (device.currentValue("pump1") != "off") {
+        togglePump1()
+        checkAgain = true
+    }
+    if (device.currentValue("pump2") != "off") {
+        togglePump2()
+        checkAgain = true
+    }
+    if (device.currentValue("pump3") != "off") {
+        togglePump3()
+        checkAgain = true
+    }
+    if (device.currentValue("pump4") != "off") {
+        togglePump4()
+        checkAgain = true
+    }
+    if (device.currentValue("pump5") != "off") {
+        togglePump5()
+        checkAgain = true
+    }
+    if (device.currentValue("pump6") != "off") {
+        togglePump6()
+        checkAgain = true
+    }
+    if (device.currentValue("heatingSetpoint") != device.currentValue("previousHeatingSetpoint")) {
+        setHeatingSetpoint(device.currentValue("previousHeatingSetpoint"))
+    }
+    if (checkAgain) {
+        runIn(10, off)
+    }
 }
 
 def toggleButton(name, value, levels = 2) {
@@ -236,7 +303,7 @@ def togglePump6() {
 }
 
 def toggleBlower() {
-    toggleButton("blower", 12)
+    toggleButton("blower", 12, 4)
 }
 
 def toggleMister() {
@@ -253,11 +320,12 @@ def toggleLight2() {
 
 def setHeatingSetpoint(setpoint) {
 	sendCommand("SetTemp", device.currentValue("temperatureScale") == "C" ? setpoint * 2 : setpoint)
+    sendEvent(name: "heatingSetpoint", value: setpoint)
 }
 
 def sendCommand(action, data) {
 	parent.sendCommand(device.currentValue("device_id"), action, data)
-    runIn(5, refresh)
+    runIn(2, refresh)
 }
 
 def refresh() {
@@ -280,16 +348,16 @@ def parsePanelData(encodedData) {
     def heatMode
     switch (new BigInteger(1, decoded[9])) {
     	case 0:
-        	heatMode = "Ready"
+        	heatMode = "ready"
             break
         case 1:
-        	heatMode = "Rest"
+        	heatMode = "rest"
             break
         case 2:
-        	heatMode = "Ready In Rest"
+        	heatMode = "ready in rest"
             break
         default:
-        	heatMode = "None"
+        	heatMode = "none"
             break
     }
     def flag1 = new BigInteger(1, decoded[13])
@@ -491,8 +559,9 @@ def parsePanelData(encodedData) {
            + "wifiState: ${wifiState}\n"
     )*/
     
-    sendEvent(name: "temperature", value: actualTemperature, unit: temperatureScale)
+    sendEvent(name: "switch", value: (pump1State == "off" && pump2State == "off" && pump3State == "off" && pump4State == "off" && pump5State == "off" && pump6State == "off") ? "off" : "on")
     sendEvent(name: "temperatureScale", value: temperatureScale)
+    sendEvent(name: "temperature", value: actualTemperature, unit: temperatureScale)
     sendEvent(name: "heatingSetpoint", value: targetTemperature, unit: temperatureScale)
     sendEvent(name: "thermostatMode", value: isHeating ? "heat" : "auto")
     sendEvent(name: "thermostatOperatingMode", value: isHeating ? "heating" : "idle")
@@ -506,6 +575,11 @@ def parsePanelData(encodedData) {
     sendEvent(name: "mister", value: misterOn ? "on" : "off")
     sendEvent(name: "light1", value: light1On ? "on" : "off")
     sendEvent(name: "light2", value: light2On ? "on" : "off")
+    sendEvent(name: "spaStatus", value: "${heatMode}\n${isHeating ? "heating to ${targetTemperature}°" : "not heating"}")
+}
+
+def getTemperatureRange() {
+	"(26.5..104)"
 }
 
 def getTimeZone() {

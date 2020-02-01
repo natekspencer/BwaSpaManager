@@ -15,6 +15,7 @@
  *  CHANGE HISTORY
  *  VERSION     DATE            NOTES
  *  0.9.0       2020-01-30      Initial release with basic access and control of spas
+ *  1.0.0       2020-01-31      Updated icons and bumped version to match DTH version
  *
  */
 
@@ -24,9 +25,9 @@ definition(
     author: "Nathan Spencer",
     description: "Access and control your BWA Spa.",
     category: "Health & Wellness",
-    iconUrl: "https://media.istockphoto.com/vectors/hot-hot-tub-tub-vector-icon-vector-id978958064?k=6&m=978958064&s=612x612&w=0&h=Q1E0vvvh_KesWP8btMG66zfq2F4aLivRB26DE6Vlr_k=",
-    iconX2Url: "https://media.istockphoto.com/vectors/hot-hot-tub-tub-vector-icon-vector-id978958064?k=6&m=978958064&s=612x612&w=0&h=Q1E0vvvh_KesWP8btMG66zfq2F4aLivRB26DE6Vlr_k=",
-    iconX3Url: "https://media.istockphoto.com/vectors/hot-hot-tub-tub-vector-icon-vector-id978958064?k=6&m=978958064&s=612x612&w=0&h=Q1E0vvvh_KesWP8btMG66zfq2F4aLivRB26DE6Vlr_k=",
+    iconUrl: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/hot-tub.png",
+    iconX2Url: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/hot-tub.png",
+    iconX3Url: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/hot-tub.png",
     singleInstance: false
 ) {
 }
