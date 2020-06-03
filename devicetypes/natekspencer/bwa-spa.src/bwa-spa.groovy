@@ -17,6 +17,7 @@
  *  0.9.0       2020-01-30      Initial release with basic access and control of spas
  *  1.0.0       2020-01-31      Updated UI and icons as well as switch functionality that can be controlled with
  *                              Alexa. Added preference for a "Default Temperature When Turned On"
+ *  1.0.1       2020-06-03      Additional functionality for aux, temperature range, and heat modes
  *
  */
 
@@ -62,6 +63,10 @@ metadata {
         attribute "mister", "string"
         attribute "light1", "string"
         attribute "light2", "string"
+        attribute "aux1", "string"
+        attribute "aux2", "string"
+        attribute "temperatureRange", "string"
+        attribute "heatMode", "string"
         
         command "toggleSwitch"
         command "togglePump1"
@@ -74,6 +79,10 @@ metadata {
         command "toggleMister"
         command "toggleLight1"
         command "toggleLight2"
+        command "toggleAux1"
+        command "toggleAux2"
+        command "toggleTemperatureRange"
+        command "toggleHeatMode"
     }
     
     preferences {
@@ -169,19 +178,44 @@ metadata {
         
         standardTile("mister", "device.mister", width: 2, height: 1, decoration: "flat") {
             state "off"        , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning on" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-off.png" , defaultState: true
-            state "turning on" , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning on" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-off.png"
+            state "turning on" , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning on" , icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-on.png"
             state "on"         , label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning off", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-on.png"
             state "turning off", label: 'mister: ${currentValue}', action: "toggleMister", nextState: "turning off", icon: "https://raw.githubusercontent.com/natekspencer/BwaSpaManager/master/images/mist-on.png"
         }
         
         standardTile("light1", "device.light1", width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.on" , defaultState: true
-            state "off"    , label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.off"
+            state "off", label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.off", defaultState: true
+            state "on" , label: 'light 1: ${currentValue}', action: "toggleLight1", icon: "st.switches.light.on"
         }
         
         standardTile("light2", "device.light2", width: 2, height: 1, decoration: "flat") {
-            state "default", label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.on" , defaultState: true
-            state "off"    , label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.off"
+            state "off", label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.off", defaultState: true
+            state "on" , label: 'light 2: ${currentValue}', action: "toggleLight2", icon: "st.switches.light.on"
+        }
+        
+        standardTile("aux1", "device.aux1", width: 1, height: 1, decoration: "flat") {
+            state "off", label: 'aux 1: ${currentValue}', action: "toggleAux1", icon: "st.switches.light.off", defaultState: true
+            state "on" , label: 'aux 1: ${currentValue}', action: "toggleAux1", icon: "st.switches.light.on"
+        }
+        
+        standardTile("aux2", "device.aux2", width: 1, height: 1, decoration: "flat") {
+            state "off", label: 'aux 2: ${currentValue}', action: "toggleAux2", icon: "st.switches.light.off", defaultState: true
+            state "on" , label: 'aux 2: ${currentValue}', action: "toggleAux2", icon: "st.switches.light.on"
+        }
+        
+        standardTile("temperatureRange", "device.temperatureRange", width: 2, height: 1, decoration: "flat") {
+            state "high", label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.off", defaultState: true
+            state "low" , label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.on"
+        }
+        
+        standardTile("temperatureRange", "device.temperatureRange", width: 2, height: 1, decoration: "flat") {
+            state "high", label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.off", defaultState: true
+            state "low" , label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.on"
+        }
+        
+        standardTile("heatMode", "device.heatMode", width: 2, height: 1, decoration: "flat") {
+            state "rest" , label: 'heat mode: ${currentValue}', action: "toggleHeatMode", icon: "st.switches.light.off", defaultState: true
+            state "ready", label: 'heat mode: ${currentValue}', action: "toggleHeatMode", icon: "st.switches.light.on"
         }
 
         standardTile("refresh", "device.refresh", width: 2, height: 1, decoration: "flat") {
@@ -193,7 +227,8 @@ metadata {
             , "pump1", "heatSliderControl", "pump2"
             , "pump3", "blower", "pump4"
             , "pump5", "mister", "pump6"
-            , "light1", "refresh", "light2"])
+            , "light1", "aux1", "aux2", "light2"
+            , "temperatureRange", "refresh", "heatMode"])
     }
 }
 
@@ -318,6 +353,22 @@ def toggleLight2() {
 	toggleButton("light2", 18)
 }
 
+def toggleAux1() {
+	toggleButton("aux1", 22)
+}
+
+def toggleAux2() {
+	toggleButton("aux2", 23)
+}
+
+def toggleTemperatureRange() {
+	toggleButton("temperatureRange", 80)
+}
+
+def toggleHeatMode() {
+	toggleButton("heatMode", 81)
+}
+
 def setHeatingSetpoint(setpoint) {
 	sendCommand("SetTemp", device.currentValue("temperatureScale") == "C" ? setpoint * 2 : setpoint)
     sendEvent(name: "heatingSetpoint", value: setpoint)
@@ -393,7 +444,7 @@ def parsePanelData(encodedData) {
     }
     def temperatureScale = (flag1 & 1) == 0 ? "F" : "C"
     def flag2 = new BigInteger(1, decoded[14])
-    def temperateRange = (flag2 & 4) == 4 ? "High" : "Low"
+    def temperatureRange = (flag2 & 4) == 4 ? "high" : "low"
     def isHeating = (flag2 & 48) != 0
     def flag3 = new BigInteger(1, decoded[15])
     def pump1State
@@ -540,7 +591,7 @@ def parsePanelData(encodedData) {
            + "Target Temperature: ${targetTemperature}\n"
            + "Filter Mode: ${filterMode}\n"
            + "Accessibility Type: ${accessibilityType}\n"
-           + "Temperate Range: ${temperateRange}\n"
+           + "Temperature Range: ${temperatureRange}\n"
            + "Light-1 On: ${light1On}\n"
            + "Light-2 On: ${light2On}\n"
            + "Heat Mode: ${heatMode}\n"
@@ -575,6 +626,10 @@ def parsePanelData(encodedData) {
     sendEvent(name: "mister", value: misterOn ? "on" : "off")
     sendEvent(name: "light1", value: light1On ? "on" : "off")
     sendEvent(name: "light2", value: light2On ? "on" : "off")
+    sendEvent(name: "aux1", value: aux1On ? "on" : "off")
+    sendEvent(name: "aux2", value: aux2On ? "on" : "off")
+    sendEvent(name: "temperatureRange", value: temperatureRange)
+    sendEvent(name: "heatMode", value: heatMode)
     sendEvent(name: "spaStatus", value: "${heatMode}\n${isHeating ? "heating to ${targetTemperature}°" : "not heating"}")
 }
 
