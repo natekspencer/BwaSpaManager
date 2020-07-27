@@ -17,7 +17,9 @@
  *  0.9.0       2020-01-30      Initial release with basic access and control of spas
  *  1.0.0       2020-01-31      Updated UI and icons as well as switch functionality that can be controlled with
  *                              Alexa. Added preference for a "Default Temperature When Turned On"
- *  1.0.1       2020-06-03      Additional functionality for aux, temperature range, and heat modes
+ *  1.1.0       2020-06-03      Additional functionality for aux, temperature range, and heat modes
+ *  1.1.1       2020-07-26      Adjusted icons to better match functionality for aux, temperature range and heat modes
+ *                              and removed duplicate tile declaration
  *
  */
 
@@ -194,28 +196,23 @@ metadata {
         }
         
         standardTile("aux1", "device.aux1", width: 1, height: 1, decoration: "flat") {
-            state "off", label: 'aux 1: ${currentValue}', action: "toggleAux1", icon: "st.switches.light.off", defaultState: true
-            state "on" , label: 'aux 1: ${currentValue}', action: "toggleAux1", icon: "st.switches.light.on"
+            state "off", label: 'aux 1: ${currentValue}', action: "toggleAux1", icon: "st.secondary.off", defaultState: true
+            state "on" , label: 'aux 1: ${currentValue}', action: "toggleAux1", icon: "st.samsung.da.RC_ic_power"
         }
         
         standardTile("aux2", "device.aux2", width: 1, height: 1, decoration: "flat") {
-            state "off", label: 'aux 2: ${currentValue}', action: "toggleAux2", icon: "st.switches.light.off", defaultState: true
-            state "on" , label: 'aux 2: ${currentValue}', action: "toggleAux2", icon: "st.switches.light.on"
+            state "off", label: 'aux 2: ${currentValue}', action: "toggleAux2", icon: "st.secondary.off", defaultState: true
+            state "on" , label: 'aux 2: ${currentValue}', action: "toggleAux2", icon: "st.samsung.da.RC_ic_power"
         }
         
         standardTile("temperatureRange", "device.temperatureRange", width: 2, height: 1, decoration: "flat") {
-            state "high", label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.off", defaultState: true
-            state "low" , label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.on"
-        }
-        
-        standardTile("temperatureRange", "device.temperatureRange", width: 2, height: 1, decoration: "flat") {
-            state "high", label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.off", defaultState: true
-            state "low" , label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.switches.light.on"
+            state "high", label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.alarm.temperature.overheat", defaultState: true
+            state "low" , label: 'temperature range: ${currentValue}', action: "toggleTemperatureRange", icon: "st.alarm.temperature.freeze"
         }
         
         standardTile("heatMode", "device.heatMode", width: 2, height: 1, decoration: "flat") {
-            state "rest" , label: 'heat mode: ${currentValue}', action: "toggleHeatMode", icon: "st.switches.light.off", defaultState: true
-            state "ready", label: 'heat mode: ${currentValue}', action: "toggleHeatMode", icon: "st.switches.light.on"
+            state "rest" , label: 'heat mode: ${currentValue}', action: "toggleHeatMode", icon: "st.Bedroom.bedroom2", defaultState: true
+            state "ready", label: 'heat mode: ${currentValue}', action: "toggleHeatMode", icon: "st.Health & Wellness.health2"
         }
 
         standardTile("refresh", "device.refresh", width: 2, height: 1, decoration: "flat") {
@@ -295,18 +292,25 @@ def off() {
     }
 }
 
-def toggleButton(name, value, levels = 2) {
+def offLowHigh() {
+    ["off","low","high"]
+}
+def offLowMediumHigh() {
+    ["off","low","medium","high"]
+}
+def lowHigh() {
+    ["low","high"]
+}
+def restReady() {
+    ["rest","ready"]
+}
+
+def toggleButton(name, value, states = ["off", "on"]) {
     def currentState = device.currentValue(name)
-    def nextState
-    if (currentState == "off") {
-        nextState = levels > 2 ? "setting to low" : "turning on"
-    } else if (currentState == "low") {
-        nextState = "setting to ${ levels > 3 ? "medium" : "high"}"
-    } else if (currentState == "medium") {
-        nextState = "setting to high"
-    } else if (currentState == "high" || currentState == "on") {
-        nextState = "turning off"
-    }
+    def index = states.indexOf(currentState) + 1
+    if (index >= states.size()) index = 0
+    def nextState = states[index]
+    nextState = "${["off", "on"].contains(nextState) ? "turning" : "setting to"} ${nextState}"
     if (nextState) {
         sendEvent(name: name, value: nextState)
     }
@@ -314,31 +318,31 @@ def toggleButton(name, value, levels = 2) {
 }
 
 def togglePump1() {
-    toggleButton("pump1", 4, 3)
+    toggleButton("pump1", 4, offLowHigh())
 }
 
 def togglePump2() {
-    toggleButton("pump2", 5, 3)
+    toggleButton("pump2", 5, offLowHigh())
 }
 
 def togglePump3() {
-    toggleButton("pump3", 6, 3)
+    toggleButton("pump3", 6, offLowHigh())
 }
 
 def togglePump4() {
-    toggleButton("pump4", 7, 3)
+    toggleButton("pump4", 7, offLowHigh())
 }
 
 def togglePump5() {
-    toggleButton("pump5", 8, 3)
+    toggleButton("pump5", 8, offLowHigh())
 }
 
 def togglePump6() {
-    toggleButton("pump6", 9, 3)
+    toggleButton("pump6", 9, offLowHigh())
 }
 
 def toggleBlower() {
-    toggleButton("blower", 12, 4)
+    toggleButton("blower", 12, offLowMediumHigh())
 }
 
 def toggleMister() {
@@ -362,11 +366,11 @@ def toggleAux2() {
 }
 
 def toggleTemperatureRange() {
-	toggleButton("temperatureRange", 80)
+	toggleButton("temperatureRange", 80, lowHigh())
 }
 
 def toggleHeatMode() {
-	toggleButton("heatMode", 81)
+	toggleButton("heatMode", 81, restReady())
 }
 
 def setHeatingSetpoint(setpoint) {
