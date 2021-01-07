@@ -70,7 +70,7 @@ def mainPage() {
 def authPage() {
     dynamicPage(name: "authPage", nextPage: "authResultPage", uninstall: false, install: false) {
         section("BWA Credentials") {
-            input("username", "username", title: "User ID", description: "BWA User ID", required: true)
+            input("username", "text", title: "User ID", description: "BWA User ID", required: true)
             input("password", "password", title: "Password", description: "BWA Password", required: true)
         }
     }
