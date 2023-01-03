@@ -1,3 +1,5 @@
+### This project is no longer actively maintained.
+
 # BWA Spa Manager
 Free SmartThings integration for Balboa Worldwide Group Spas controlled by the Balboa Worldwide - Spa Control app (BWA) (probably not compatible with ControlMySpa)
 
